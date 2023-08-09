@@ -1,28 +1,25 @@
 package com.alcano.game.input;
 
+import org.joml.Vector2f;
+
 import static org.lwjgl.glfw.GLFW.*;
 
-public class Mouse {
+public class MouseListener {
 
     private static final int NUM_BUTTONS = 5;
 
-    private static Mouse instance;
+    private static MouseListener instance;
 
     private double scrollX, scrollY;
     private double posX, posY, lastX, lastY;
     private boolean buttonsPressed[] = new boolean[NUM_BUTTONS];
     private boolean dragging;
 
-    private Mouse() {
-        System.out.println("Scroll: (" + this.scrollX + ", " + this.scrollY + ")");
-        System.out.println("Position: (" + this.posX + ", " + this.posY + ")");
-        System.out.println("Last Position: (" + this.lastX + ", " + this.lastY + ")");
-        System.out.println(this.dragging);
-    }
+    private MouseListener() {}
 
-    public static Mouse get() {
+    public static MouseListener get() {
         if (instance == null) {
-            instance = new Mouse();
+            instance = new MouseListener();
         }
 
         return instance;
@@ -33,6 +30,7 @@ public class Mouse {
         get().lastY = get().posY;
         get().posX = posX;
         get().posY = posY;
+        get().dragging = get().buttonPressed(0) || get().buttonPressed(1) || get().buttonPressed(2);
     }
 
     public static void mouseButtonCallback(long window, int button, int action, int mods) {
@@ -51,6 +49,40 @@ public class Mouse {
         get().scrollY = offsetY;
     }
 
-    public 
+    public static void endFrame() {
+        get().scrollX = 0.0;
+        get().scrollY = 0.0;
+        get().lastX = get().posX;
+        get().lastY = get().posY;
+    }
 
+    public float getX() {
+        return (float) posX;
+    }
+
+    public float getY() {
+        return (float) posY;
+    }
+
+    public float getLastX() {
+        return (float) lastX;
+    }
+
+    public float getLastY() {
+        return (float) lastY;
+    }
+
+    public float getScrollX() {
+        return (float) scrollX;
+    }
+
+    public float getScrollY() {
+        return (float) scrollY;
+    }
+
+    public boolean buttonPressed(int button) {
+        if (button >= NUM_BUTTONS) return false;
+
+        return this.buttonsPressed[button];
+    }
 }

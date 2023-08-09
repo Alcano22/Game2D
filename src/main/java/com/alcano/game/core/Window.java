@@ -1,11 +1,13 @@
-package com.alcano.game;
+package com.alcano.game.core;
 
 import com.alcano.game.input.Input;
 import com.alcano.game.input.KeyListener;
 import com.alcano.game.input.MouseListener;
+import com.alcano.game.text.Component;
 import com.alcano.game.util.Time;
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
 
 import static org.lwjgl.glfw.Callbacks.*;
@@ -54,11 +56,12 @@ public class Window {
         // Configure GLFW
         glfwDefaultWindowHints();
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
         glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
         this.glfwWindow = glfwCreateWindow(this.width, this.height, this.title, NULL, NULL);
         if (glfwWindow == NULL) {
+            glfwTerminate();
             throw new IllegalStateException("Unable to create GLFW window");
         }
 
@@ -67,6 +70,10 @@ public class Window {
         glfwSetMouseButtonCallback(this.glfwWindow, MouseListener::mouseButtonCallback);
         glfwSetScrollCallback(this.glfwWindow, MouseListener::mouseScrollCallback);
         glfwSetKeyCallback(this.glfwWindow, KeyListener::keyCallback);
+
+        long monitor = glfwGetPrimaryMonitor();
+        GLFWVidMode vidMode = glfwGetVideoMode(monitor);
+        glfwSetWindowMonitor(glfwWindow, monitor, 0, 0, vidMode.width(), vidMode.height(), vidMode.refreshRate());
 
         // Make the OpenGL context current
         glfwMakeContextCurrent(this.glfwWindow);
