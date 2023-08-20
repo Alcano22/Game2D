@@ -1,16 +1,17 @@
 package com.alcano.game.core;
 
+import com.alcano.game.debug.Debug;
+import com.alcano.game.imgui.ImGuiLayer;
 import com.alcano.game.input.Input;
 import com.alcano.game.input.KeyListener;
 import com.alcano.game.input.MouseListener;
-import com.alcano.game.text.Component;
 import com.alcano.game.util.Time;
+import org.joml.Vector4f;
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
-import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
 
-import static org.lwjgl.glfw.Callbacks.*;
+import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -19,11 +20,15 @@ public class Window {
 
     private static Window instance;
 
+    private final Game game;
+
     private int width, height;
     private String title;
     private long glfwWindow;
+    private ImGuiLayer imGuiLayer;
 
     private Window() {
+        this.game = Game.get();
         this.width = 1920;
         this.height = 1080;
         this.title = "Game 2D";
@@ -38,7 +43,7 @@ public class Window {
     }
 
     public void run() {
-        System.out.println("Hello LWJGL " + Version.getVersion() + "!");
+        Debug.logInfo("Hello LWJGL " + Version.getVersion() + "!");
 
         this.init();
         this.loop();
@@ -61,7 +66,6 @@ public class Window {
 
         this.glfwWindow = glfwCreateWindow(this.width, this.height, this.title, NULL, NULL);
         if (glfwWindow == NULL) {
-            glfwTerminate();
             throw new IllegalStateException("Unable to create GLFW window");
         }
 
@@ -70,10 +74,10 @@ public class Window {
         glfwSetMouseButtonCallback(this.glfwWindow, MouseListener::mouseButtonCallback);
         glfwSetScrollCallback(this.glfwWindow, MouseListener::mouseScrollCallback);
         glfwSetKeyCallback(this.glfwWindow, KeyListener::keyCallback);
-
-        long monitor = glfwGetPrimaryMonitor();
-        GLFWVidMode vidMode = glfwGetVideoMode(monitor);
-        glfwSetWindowMonitor(glfwWindow, monitor, 0, 0, vidMode.width(), vidMode.height(), vidMode.refreshRate());
+        glfwSetWindowSizeCallback(this.glfwWindow, (window, newWidth, newHeight) -> {
+            this.width = newWidth;
+            this.height = newHeight;
+        });
 
         // Make the OpenGL context current
         glfwMakeContextCurrent(this.glfwWindow);
@@ -90,6 +94,14 @@ public class Window {
          * bindings available for use
          */
         GL.createCapabilities();
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+        this.imGuiLayer = new ImGuiLayer(this.glfwWindow);
+        this.imGuiLayer.initImGui();
+
+        this.game.init();
     }
 
     private void loop() {
@@ -97,20 +109,24 @@ public class Window {
         float endTime;
 
         while (!glfwWindowShouldClose(this.glfwWindow)) {
+            endTime = Time.getTime();
+            Time.deltaTime = endTime - beginTime;
+            beginTime = endTime;
+
             glfwPollEvents();
 
-            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            Vector4f backgroundColor = this.game.sceneManager.getCurrentScene().camera.backgroundColor;
+            glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, backgroundColor.w);
             glClear(GL_COLOR_BUFFER_BIT);
 
             if (Input.getKey(GLFW_KEY_ESCAPE)) {
                 glfwSetWindowShouldClose(this.glfwWindow, true);
             }
 
-            glfwSwapBuffers(this.glfwWindow);
+            this.game.update();
+            this.imGuiLayer.update(this.game.sceneManager.getCurrentScene());
 
-            endTime = Time.getTime();
-            Time.deltaTime = endTime - beginTime;
-            beginTime = endTime;
+            glfwSwapBuffers(this.glfwWindow);
         }
     }
 
@@ -122,6 +138,22 @@ public class Window {
         // Terminate GLFW and the free the error callback
         glfwTerminate();
         glfwSetErrorCallback(null).free();
+    }
+
+    public static float getWidth() {
+        return get().width;
+    }
+
+    public static void setWidth(int width) {
+        get().width = width;
+    }
+
+    public static float getHeight() {
+        return get().height;
+    }
+
+    public static void setHeight(int height) {
+        get().height = height;
     }
 
 }

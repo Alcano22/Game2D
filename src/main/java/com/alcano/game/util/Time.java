@@ -1,12 +1,25 @@
 package com.alcano.game.util;
 
+import org.lwjgl.glfw.GLFW;
+
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+
 public class Time {
 
-    public static float timeStarted = System.nanoTime();
     public static float deltaTime;
 
+    public static String getCurrentTimestamp(char leftWrap, char rightWrap) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        return leftWrap + LocalTime.now().format(formatter) + rightWrap;
+    }
+
+    public static String getCurrentTimestamp() {
+        return getCurrentTimestamp('[', ']');
+    }
+
     public static float getTime() {
-        return (float)((System.nanoTime() - timeStarted) * 1E-9);
+        return (float) GLFW.glfwGetTime();
     }
 
 }
